@@ -7,7 +7,7 @@ Persönliche Web-App, mit der du deine tägliche Mobility- und Kräftigungsrouti
 1. Auf github.com einloggen und oben rechts auf **+ → New repository** gehen.
 2. Name: `daily`. Sichtbarkeit: **Public** (für GitHub Pages im Gratis-Tarif nötig; im Repo liegt nur der App-Code, keine persönlichen Daten). Auf **Create repository** klicken.
 3. Auf der leeren Repo-Seite **uploading an existing file** anklicken.
-4. Den **Inhalt** des entpackten Ordners hineinziehen: `index.html`, `manifest.webmanifest`, `sw.js`, `README.md` und den Ordner `icons`. Dann **Commit changes**.
+4. Den **Inhalt** des entpackten Ordners hineinziehen: `index.html`, `manifest.webmanifest`, `sw.js`, `README.md` und die drei Icon-PNGs. Dann **Commit changes**.
 5. Im Repo **Settings → Pages** öffnen. Unter *Build and deployment* als Source **Deploy from a branch** wählen, Branch **main**, Ordner **/ (root)**, **Save**.
 6. Nach etwa einer Minute ist die App erreichbar unter
    `https://<dein-github-name>.github.io/daily/`
