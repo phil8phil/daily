@@ -1,6 +1,6 @@
 // Daily – Service Worker: App offline verfügbar machen.
 // Bei jeder Änderung an den Dateien die Versionsnummer erhöhen.
-const CACHE = 'daily-v1.0.1';
+const CACHE = 'daily-v1.1.0';
 const ASSETS = ['./', './index.html', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 

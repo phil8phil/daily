@@ -83,6 +83,14 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 .pill{font-size:12px;font-weight:600;padding:3px 8px;border-radius:99px;background:var(--card2);color:var(--muted)}
 .pill.t-strength{background:var(--accent-soft);color:var(--accent)}
 .pill.t-soft{background:var(--sage-soft);color:var(--sage)}
+.pill.imp{background:var(--text);color:var(--bg)}
+.week{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:13px;color:var(--muted)}
+.week .pips{display:flex;gap:3px}
+.week .pips i{width:14px;height:6px;border-radius:3px;background:var(--card2)}
+.week .pips i.on{background:var(--accent)}
+.week .pips i.on.soft{background:var(--sage)}
+.week .pips i.over{background:color-mix(in srgb,var(--muted) 45%,transparent)}
+.field .help{font-size:13px;color:var(--muted);margin:8px 4px 0}
 .ex-actions{display:flex;flex-direction:column;gap:6px;flex:none}
 .icon-btn{width:36px;height:36px;border-radius:11px;background:var(--card2);display:grid;place-items:center;color:var(--muted)}
 .icon-btn svg{width:18px;height:18px}
@@ -242,7 +250,7 @@ textarea.input{min-height:72px;resize:vertical}
 <script>
 'use strict';
 /* ---------- Konstanten ---------- */
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
 const STORE_KEY = 'daily.v1';
 const AREAS = ['Arme','Schulter','Brust','Brustwirbelsäule','Beine/Hüfte','Rumpf'];
 const TYPES = {
@@ -251,6 +259,13 @@ const TYPES = {
   mobility:{label:'Mobilisieren', cls:'t-soft'}
 };
 const BUDGETS = [15,20,30];
+// Wichtigkeit → Ziel pro Woche
+const IMPORTANCE = {
+  1:{label:'Niedrig', target:1},
+  2:{label:'Mittel',  target:3},
+  3:{label:'Hoch',    target:5}
+};
+const targetOf = e => IMPORTANCE[e.importance||2].target;
 const FEEL = [['good','gut'],['ok','okay'],['pain','zwickt']];
 const PREP_SECONDS = 5;
 
@@ -263,7 +278,7 @@ const SEED = [
   {id:'air-squats', name:'Air Squats', type:'strength', areas:['Beine/Hüfte'], timed:null, reps:'3 × 20', duration:4},
   {id:'bulgarian-split-squats', name:'Bulgarian Split Squats', type:'strength', areas:['Beine/Hüfte'], timed:null, reps:'3 × 8 pro Seite', duration:6},
   {id:'bws-mobilisieren', name:'Brustwirbelsäule mobilisieren', type:'mobility', areas:['Brustwirbelsäule'], timed:{sets:2,seconds:60,perSide:false}, reps:'', duration:2}
-].map(e=>({note:'', link:'', source:'', active:true, deleted:false, ...e}));
+].map(e=>({note:'', link:'', source:'', active:true, deleted:false, importance:2, ...e}));
 
 /* ---------- Speicher ---------- */
 function fresh(){ return {version:1, exercises:SEED.map(e=>JSON.parse(JSON.stringify(e))), days:{}, settings:{defaultBudget:20, hideInstallHint:false}}; }
@@ -279,6 +294,7 @@ function normalize(s){
     e.duration = Math.max(1, Number(e.duration)||1);
     if(!TYPES[e.type]) e.type='mobility';
     e.note=e.note||''; e.link=e.link||''; e.source=e.source||''; e.reps=e.reps||'';
+    e.importance = [1,2,3].includes(Number(e.importance)) ? Number(e.importance) : 2;
     if(e.active===undefined) e.active=true;
   });
   for(const k in s.days){
@@ -336,12 +352,14 @@ const isStandalone = () => window.navigator.standalone===true || matchMedia('(di
 /* ---------- Planungslogik ---------- */
 // Index über alle Tage VOR dateKey: wann wurde welche Übung / welcher Bereich zuletzt gemacht?
 function historyIndex(before){
-  const ex={}, area={};
+  const ex={}, area={}, week={};
+  const weekStart = addDays(before,-6);
   for(const k of Object.keys(state.days)){
     if(k>=before) continue;
     const d=state.days[k];
     for(const id of Object.keys(d.done||{})){
       if(!ex[id]||k>ex[id]) ex[id]=k;
+      if(k>=weekStart) week[id]=(week[id]||0)+1;
       const e=byId(id); if(!e) continue;
       for(const a of e.areas){
         const r = area[a] = area[a]||{};
@@ -351,7 +369,7 @@ function historyIndex(before){
       }
     }
   }
-  return {ex, area};
+  return {ex, area, week};
 }
 // Kräftigung eines Bereichs erst nach mindestens einem Ruhetag
 function eligible(e, dateKey, H){
@@ -363,11 +381,14 @@ const stale = (k, dateKey) => k ? Math.min(14, diffDays(k,dateKey)) : 14;
 function scoreFor(e, dateKey, H, plan, rng){
   const areaCount={}; let strength=0, soft=0;
   plan.forEach(id=>{ const p=byId(id); if(!p) return; p.areas.forEach(a=>areaCount[a]=(areaCount[a]||0)+1); p.type==='strength'?strength++:soft++; });
-  const exS = stale(H.ex[e.id], dateKey);
+  // Dringlichkeit nach Wichtigkeit: wie weit ist die Übung hinter ihrem Wochenziel?
+  const target = targetOf(e), interval = 7/target;
+  const since = stale(H.ex[e.id], dateKey);
+  const urgency = Math.min(since/interval, 3)*6 + (target-(H.week[e.id]||0))*3;
   const arS = e.areas.reduce((s,a)=>s+stale(H.area[a]&&H.area[a].any, dateKey),0)/e.areas.length;
   const overlap = e.areas.reduce((s,a)=>s+(areaCount[a]||0),0);
   const imbalance = e.type==='strength' ? strength-soft : soft-strength;
-  return exS + arS - overlap*4 - imbalance*2 + rng()*2;
+  return urgency + arS*0.5 - overlap*3 - imbalance*1.5 + rng()*2;
 }
 // Kraft-Schwerpunkt des Tages: Kräftigung nur für Bereiche, die mit der ersten
 // Kraftübung zusammenhängen. So bleibt für morgen der andere Teil übrig (z. B. Beine ↔ Oberkörper).
@@ -376,7 +397,9 @@ function strengthFocus(plan){
   plan.forEach(id=>{ const p=byId(id); if(p && p.type==='strength') p.areas.forEach(a=>f.add(a)); });
   return f;
 }
-function bestCandidate(dateKey, H, plan, remaining, exclude, rng){
+// mode 'target': nur Übungen unter ihrem Wochenziel.
+// mode 'fill': Restzeit auffüllen, bevorzugt mit Hoch.
+function bestCandidate(dateKey, H, plan, remaining, exclude, rng, mode='any'){
   let best=null, bestScore=-Infinity;
   const focus=strengthFocus(plan);
   for(const e of activeExercises()){
@@ -384,7 +407,11 @@ function bestCandidate(dateKey, H, plan, remaining, exclude, rng){
     if(e.duration>remaining) continue;
     if(!eligible(e,dateKey,H)) continue;
     if(e.type==='strength' && focus.size && !e.areas.some(a=>focus.has(a))) continue;
-    const s = scoreFor(e,dateKey,H,plan,rng);
+    const reached = (H.week[e.id]||0) >= targetOf(e);
+    if(mode==='target' && reached) continue;
+    // Auffüllen: Hoch unbegrenzt, Mittel höchstens 1× über Ziel, Niedrig nie
+    if(mode==='fill' && (e.importance<2 || (e.importance===2 && (H.week[e.id]||0) > targetOf(e)))) continue;
+    const s = scoreFor(e,dateKey,H,plan,rng) + (mode==='fill' ? e.importance*4 : 0);
     if(s>bestScore){ bestScore=s; best=e; }
   }
   return best;
@@ -395,10 +422,12 @@ function generate(dateKey, budget, keep, exclude){
   const plan = [...keep];
   let used = plan.reduce((s,id)=>s+(byId(id)?.duration||0),0);
   const ex = new Set(exclude);
-  for(;;){
-    const n = bestCandidate(dateKey,H,plan,budget-used,ex,rng);
-    if(!n) break;
-    plan.push(n.id); used+=n.duration;
+  for(const mode of ['target','fill']){
+    for(;;){
+      const n = bestCandidate(dateKey,H,plan,budget-used,ex,rng,mode);
+      if(!n) break;
+      plan.push(n.id); used+=n.duration;
+    }
   }
   return plan;
 }
@@ -419,6 +448,13 @@ function regenerateToday(){
   d.plan = generate(k, d.budget, keep, [...d.exclude, ...d.skipped]);
   save();
 }
+
+function weekCount(id){
+  const tk=todayKey(); let n=0;
+  for(let i=0;i<7;i++){ const d=state.days[addDays(tk,-i)]; if(d && d.done && d.done[id]) n++; }
+  return n;
+}
+function importancePill(e){ return e.importance===3 ? '<span class="pill imp">Wichtig</span>' : ''; }
 
 /* ---------- Serie ---------- */
 const isActive = k => { const d=state.days[k]; return !!(d && d.done && Object.keys(d.done).length); };
@@ -489,7 +525,7 @@ function exCard(e, d){
     <div class="ex-body" data-act="expand" data-id="${e.id}">
       <div class="ex-name">${esc(e.name)}</div>
       <div class="ex-meta">${esc(presc(e))}${presc(e)?' · ':''}~${e.duration} Min</div>
-      <div class="tags">${typePill(e)}${e.areas.map(a=>`<span class="pill">${esc(a)}</span>`).join('')}</div>
+      <div class="tags">${importancePill(e)}${typePill(e)}${e.areas.map(a=>`<span class="pill">${esc(a)}</span>`).join('')}</div>
       ${details}
     </div>
     ${actions}
@@ -599,19 +635,23 @@ function renderHistory(){
 function renderLibrary(){
   const order={strength:0,mobility:1,stretch:2};
   const list=live().sort((a,b)=>order[a.type]-order[b.type]||a.name.localeCompare(b.name,'de'));
-  return `
-    <div class="sub">${list.filter(e=>e.active).length} aktiv</div><h1>Übungen</h1>
-    <h2>Bibliothek</h2>
-    <div class="stack">
-    ${list.map(e=>`<div class="card lib-item ${e.active?'':'inactive'}" data-act="editEx" data-id="${e.id}">
+  const item = e => {
+    const t=targetOf(e), n=weekCount(e.id), soft=e.type!=='strength';
+    let pips=''; for(let i=0;i<Math.max(t,n);i++) pips+=`<i class="${i<Math.min(n,t)?'on'+(soft?' soft':''):(i>=t?'over':'')}"></i>`;
+    return `<div class="card lib-item ${e.active?'':'inactive'}" data-act="editEx" data-id="${e.id}">
         <div class="info">
           <div class="ex-name">${esc(e.name)}</div>
           <div class="ex-meta">${esc(presc(e))}${presc(e)?' · ':''}~${e.duration} Min</div>
           <div class="tags">${typePill(e)}${e.areas.map(a=>`<span class="pill">${esc(a)}</span>`).join('')}</div>
+          ${e.active?`<div class="week"><div class="pips">${pips}</div><span>${n} von ${t}× · letzte 7 Tage</span></div>`:''}
         </div>
         <button class="switch ${e.active?'on':''}" data-act="toggleActive" data-id="${e.id}" aria-label="${e.active?'Deaktivieren':'Aktivieren'}"></button>
-      </div>`).join('')}
-    </div>
+      </div>`;
+  };
+  const groups=[3,2,1].map(lv=>[lv, list.filter(e=>e.importance===lv)]).filter(([,l])=>l.length);
+  return `
+    <div class="sub">${list.filter(e=>e.active).length} aktiv</div><h1>Übungen</h1>
+    ${groups.map(([lv,l])=>`<h2>${IMPORTANCE[lv].label} · Ziel ${IMPORTANCE[lv].target}× pro Woche</h2><div class="stack">${l.map(item).join('')}</div>`).join('')}
     <button class="btn primary" style="margin-top:16px" data-act="newEx">${I.plus}Neue Übung</button>
     <p class="muted small" style="margin:12px 4px">Inaktive Übungen bleiben gespeichert, werden aber nicht mehr eingeplant.</p>
   `;
@@ -619,7 +659,7 @@ function renderLibrary(){
 
 function exForm(e){
   const isNew=!e;
-  e = e || {name:'', type:'strength', areas:[], timed:null, reps:'', duration:3, note:'', link:'', source:''};
+  e = e || {name:'', type:'strength', areas:[], timed:null, reps:'', duration:3, note:'', link:'', source:'', importance:2};
   const t=e.timed||{sets:2, seconds:30, perSide:false};
   return `<div class="grab"></div>
   <h3><span>${isNew?'Neue Übung':'Übung bearbeiten'}</span><button class="icon-btn" data-act="closeSheet" aria-label="Schließen">${I.close}</button></h3>
@@ -628,6 +668,9 @@ function exForm(e){
     <div class="field"><div class="lbl">Typ</div><div class="opt">
       ${Object.entries(TYPES).map(([v,o])=>`<input type="radio" name="type" id="ty-${v}" value="${v}" ${e.type===v?'checked':''}><label for="ty-${v}">${o.label}</label>`).join('')}
     </div></div>
+    <div class="field"><div class="lbl">Wichtigkeit</div><div class="opt">
+      ${[1,2,3].map(v=>`<input type="radio" name="importance" id="im-${v}" value="${v}" ${(e.importance||2)===v?'checked':''}><label for="im-${v}">${IMPORTANCE[v].label} · ${IMPORTANCE[v].target}×/Woche</label>`).join('')}
+    </div><p class="help">Kräftigung braucht Ruhetage, schafft also höchstens 3–4× pro Woche.</p></div>
     <div class="field"><div class="lbl">Körperbereiche</div><div class="opt">
       ${AREAS.map((a,i)=>`<input type="checkbox" name="areas" id="ar-${i}" value="${esc(a)}" ${e.areas.includes(a)?'checked':''}><label for="ar-${i}">${esc(a)}</label>`).join('')}
     </div></div>
@@ -656,7 +699,7 @@ function saveExForm(form){
   if(!name){ toast('Bitte einen Namen eingeben'); return; }
   if(!areas.length){ toast('Mindestens einen Körperbereich wählen'); return; }
   const timed = fd.get('timed') ? {sets:Math.max(1,parseInt(fd.get('sets'))||1), seconds:Math.max(5,parseInt(fd.get('seconds'))||30), perSide:!!fd.get('perSide')} : null;
-  const data = {name, type:fd.get('type')||'strength', areas, timed, reps:(fd.get('reps')||'').trim(),
+  const data = {name, type:fd.get('type')||'strength', importance:Number(fd.get('importance'))||2, areas, timed, reps:(fd.get('reps')||'').trim(),
     duration:Math.min(30,Math.max(1,parseInt(fd.get('duration'))||1)), note:(fd.get('note')||'').trim(), link:(fd.get('link')||'').trim(), source:(fd.get('source')||'').trim()};
   const id=form.dataset.id;
   if(id){ Object.assign(byId(id), data); toast('Gespeichert'); }
@@ -685,7 +728,7 @@ function renderMore(){
     <h2>Hinweise</h2>
     <div class="card prose">
       Der Timer-Ton ist nicht hörbar, wenn dein iPhone stummgeschaltet ist. Der Bildschirm bleibt während des Timers an.<br><br>
-      <b>Planungsregeln:</b> Kräftigung eines Bereichs frühestens nach einem Ruhetag. Dehnen und Mobilisieren jederzeit. Was am längsten nicht dran war, kommt zuerst.
+      <b>Planungsregeln:</b> Jede Übung hat ein Wochenziel nach Wichtigkeit (Niedrig 1×, Mittel 3×, Hoch 5×). Was am weitesten hinter seinem Ziel liegt, kommt zuerst. Restzeit wird vor allem mit wichtigen Übungen aufgefüllt, nie mit niedrigen. Kräftigung eines Bereichs frühestens nach einem Ruhetag, Dehnen und Mobilisieren jederzeit.
     </div>
     <h2>&nbsp;</h2>
     <div class="list"><button class="danger" data-act="reset">${I.trash}<span>Alle Daten zurücksetzen</span></button></div>

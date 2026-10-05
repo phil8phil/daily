@@ -31,5 +31,6 @@ Unter **Mehr → Backup exportieren** speicherst du eine JSON-Datei, z. B. in iC
 - Du wählst abends 15, 20 oder 30 Minuten, der Plan wird passend zusammengestellt.
 - Kräftigung eines Körperbereichs frühestens nach einem Ruhetag.
 - Pro Tag ein Kraft-Schwerpunkt (z. B. Beine oder Oberkörper), damit der andere Teil am nächsten Tag dran ist.
-- Dehnen und Mobilisieren sind jeden Tag erlaubt. Was am längsten nicht dran war, kommt zuerst.
+- Jede Übung hat eine Wichtigkeit mit Wochenziel: Niedrig 1×, Mittel 3×, Hoch 5×. Was am weitesten hinter seinem Ziel liegt, kommt zuerst.
+- Dehnen und Mobilisieren sind jeden Tag erlaubt.
 - Tauschen, Überspringen und Hinzufügen jederzeit möglich.
