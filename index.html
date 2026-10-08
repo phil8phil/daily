@@ -235,6 +235,46 @@ textarea.input{min-height:72px;resize:vertical}
 #timer .t-ctrl .btn{flex:1}
 #timer .note{font-size:13px;color:var(--muted);text-align:center;margin-top:12px;max-width:320px}
 
+/* geführter Modus */
+#guided{position:fixed;inset:0;z-index:40;background:var(--bg);display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 12px) 20px calc(env(safe-area-inset-bottom) + 20px);overflow:auto}
+#guided .g-top{display:flex;align-items:center;gap:12px;width:100%;max-width:520px;margin:0 auto}
+#guided .g-count{flex:1;text-align:center;font-weight:600;font-size:15px;color:var(--muted)}
+#guided .g-prog{display:flex;gap:4px;width:100%;max-width:520px;margin:12px auto 0}
+#guided .g-prog i{flex:1;height:4px;border-radius:2px;background:var(--card2)}
+#guided .g-prog i.done{background:var(--accent)} #guided .g-prog i.cur{background:color-mix(in srgb,var(--accent) 45%,transparent)}
+#guided .g-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;width:100%;max-width:520px;margin:0 auto;padding:16px 0}
+#guided .g-name{font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.15}
+#guided .g-meta{color:var(--muted);margin-top:6px;font-size:15px}
+#guided .g-round{color:var(--muted);font-weight:600;margin-top:18px;min-height:1.4em}
+#guided .ring{position:relative;width:min(66vw,260px);aspect-ratio:1;margin:14px 0}
+#guided .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+#guided .ring circle{fill:none;stroke-width:10}
+#guided .ring .bg{stroke:var(--card2)}
+#guided .ring .fg{stroke:var(--accent);stroke-linecap:round}
+#guided .ring.soft .fg{stroke:var(--sage)}
+#guided .ring .num{position:absolute;inset:0;display:grid;place-items:center}
+#guided .ring .num b{font-size:68px;font-weight:300;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1;display:block}
+#guided .ring .num small{display:block;font-size:14px;color:var(--muted);font-weight:600;margin-top:6px;text-transform:uppercase;letter-spacing:.08em}
+#guided .big-reps{font-size:84px;font-weight:300;letter-spacing:-.03em;line-height:1;margin:26px 0 4px;font-variant-numeric:tabular-nums}
+#guided .big-sub{color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:14px}
+#guided .g-note{font-size:14px;color:var(--muted);margin-top:18px;max-width:380px;white-space:pre-wrap}
+#guided .g-foot{width:100%;max-width:520px;margin:0 auto}
+#guided .g-foot .btn-row{margin-bottom:10px}
+#guided .g-link{display:block;margin:4px auto 0;color:var(--muted);font-weight:600;font-size:15px;padding:8px}
+#guided .next-card{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:22px;width:100%;text-align:left}
+#guided .next-card .lbl{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+#guided .check-big{width:76px;height:76px;border-radius:50%;background:var(--accent);display:grid;place-items:center;margin-bottom:16px}
+#guided .check-big svg{width:38px;height:38px;stroke:#fff}
+#guided .sum-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-top:20px}
+#guided .sum-stats .stat{text-align:left}
+#guided .g-section{width:100%;text-align:left}
+.prog-card{display:flex;gap:12px;align-items:center}
+.prog-card .info{flex:1;min-width:0}
+.prog-card .to{font-weight:600;color:var(--accent)}
+.prog-card .btns{display:flex;flex-direction:column;gap:6px;flex:none}
+.prog-card .btns button{padding:8px 12px;border-radius:10px;font-weight:600;font-size:14px;background:var(--card2);color:var(--muted)}
+.prog-card .btns button.yes{background:var(--accent);color:#fff}
 #toast{position:fixed;left:50%;bottom:calc(var(--tabh) + env(safe-area-inset-bottom) + 16px);transform:translate(-50%,20px);opacity:0;
   background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;z-index:50;transition:all .25s;pointer-events:none;max-width:90vw;text-align:center}
 #toast.show{opacity:1;transform:translate(-50%,0)}
@@ -250,7 +290,7 @@ textarea.input{min-height:72px;resize:vertical}
 <script>
 'use strict';
 /* ---------- Konstanten ---------- */
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 const STORE_KEY = 'daily.v1';
 const AREAS = ['Arme','Schulter','Brust','Brustwirbelsäule','Beine/Hüfte','Rumpf'];
 const TYPES = {
@@ -301,12 +341,14 @@ function normalize(s){
   const prevRev = (s.settings && s.settings.seedRev) || 1;
   s.settings = Object.assign({}, f.settings, s.settings||{});
   if(prevRev < SEED_REV){ addNewSeeds(s, prevRev); s.settings.seedRev = SEED_REV; }
+  const _n=new Date(), nowKey=_n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0')+'-'+String(_n.getDate()).padStart(2,'0');
   s.exercises.forEach(e=>{
     e.areas = Array.isArray(e.areas)&&e.areas.length ? e.areas : ['Rumpf'];
     e.duration = Math.max(1, Number(e.duration)||1);
     if(!TYPES[e.type]) e.type='mobility';
     e.note=e.note||''; e.link=e.link||''; e.source=e.source||''; e.reps=e.reps||'';
     e.importance = [1,2,3].includes(Number(e.importance)) ? Number(e.importance) : 2;
+    if(!e.lastChange) e.lastChange = nowKey; // Steigerung zählt ab Einführung
     if(e.active===undefined) e.active=true;
   });
   for(const k in s.days){
@@ -469,6 +511,37 @@ function weekCount(id){
 }
 function importancePill(e){ return e.importance===3 ? '<span class="pill imp">Wichtig</span>' : ''; }
 
+/* ---------- Steigerung ---------- */
+const PROG_AFTER = 3; // Einheiten ohne „zwickt“ seit der letzten Änderung
+function parseReps(r){ const m=String(r||'').match(/^\s*(\d+)\s*[×x]\s*(\d+)(.*)$/i); return m?{sets:+m[1], n:+m[2], post:m[3]}:null; }
+function cleanStreak(e){
+  const keys=Object.keys(state.days).filter(k=>k>(e.lastChange||'')).sort().reverse();
+  let n=0;
+  for(const k of keys){ const d=state.days[k]; if(!d.done||!d.done[e.id]) continue;
+    if(e.areas.some(a=>d.feel&&d.feel[a]==='pain')) break; n++; }
+  return n;
+}
+function progressionFor(e){
+  if(!e || e.deleted || !e.active) return null;
+  const n=cleanStreak(e); if(n<PROG_AFTER) return null;
+  if(e.timed){
+    const sec=e.timed.seconds; if(sec>=180) return null;
+    const next=sec+(sec<60?5:10);
+    return {id:e.id, n, from:presc(e), to:presc({timed:{...e.timed, seconds:next}}), apply:()=>{ e.timed.seconds=next; }};
+  }
+  const p=parseReps(e.reps); if(!p || p.n>=50) return null;
+  const to=p.sets+' × '+(p.n+(p.n>=10?2:1))+p.post;
+  return {id:e.id, n, from:e.reps, to, apply:()=>{ e.reps=to; }};
+}
+const progressions = () => live().map(progressionFor).filter(Boolean);
+function progCard(pr){
+  const e=byId(pr.id);
+  return `<div class="card prog-card"><div class="info"><div class="ex-name">${esc(e.name)}</div>
+    <div class="ex-meta">${esc(pr.from)} → <span class="to">${esc(pr.to)}</span></div>
+    <div class="small muted" style="margin-top:2px">${pr.n}× ohne Zwicken geschafft</div></div>
+    <div class="btns"><button class="yes" data-act="progAccept" data-id="${e.id}">Übernehmen</button><button data-act="progLater" data-id="${e.id}">Noch nicht</button></div></div>`;
+}
+
 /* ---------- Serie ---------- */
 const isActive = k => { const d=state.days[k]; return !!(d && d.done && Object.keys(d.done).length); };
 function currentStreak(){
@@ -501,6 +574,7 @@ const I = {
   tabHist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
   tabLib:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>',
   tabMore:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 001.5.86l10.5-6.5a1 1 0 000-1.72L9.5 4.64A1 1 0 008 5.5z"/></svg>',
   share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>'
 };
 
@@ -555,6 +629,8 @@ function renderToday(){
   const areas=AREAS.filter(a=>items.some(e=>e.areas.includes(a)));
   const hint = (!isStandalone() && !state.settings.hideInstallHint) ? `<div class="hint"><div>Tipp: In Safari über <b>Teilen → Zum Home-Bildschirm</b> installieren. Nur dann bleiben deine Daten dauerhaft gespeichert.</div><button data-act="dismissHint">OK</button></div>` : '';
   const allDone = items.length && doneN===items.length;
+  const openItems = items.filter(e=>!d.done[e.id]), openN=openItems.length, openMin=openItems.reduce((s,e)=>s+e.duration,0);
+  const progs = progressions();
   return `
     <div class="head">
       <div style="flex:1"><div class="sub">${longDate(k)}</div><h1>Heute</h1></div>
@@ -566,6 +642,8 @@ function renderToday(){
     <div class="summary"><span><b>${doneN} von ${items.length}</b> erledigt</span><span class="muted">${total} von ${d.budget} Min</span></div>
     <div class="bar"><i style="width:${pct}%"></i></div>
     ${allDone?`<div class="card" style="text-align:center;margin-bottom:10px"><b>Stark, alles erledigt.</b><div class="muted small">Wie fühlt es sich an? Unten kurz eintragen.</div></div>`:''}
+    ${openN?`<button class="btn primary" data-act="guideStart" style="margin-bottom:14px">${I.play}${doneN?'Geführt weitermachen':'Geführt starten'} · ~${openMin} Min</button>`:''}
+    ${progs.length?`<h2>Steigerung</h2><div class="stack" style="margin-bottom:6px">${progs.map(progCard).join('')}</div><h2>Plan</h2>`:''}
     <div class="stack">
       ${items.length ? items.map(e=>exCard(e,d)).join('') : `<div class="card empty">Heute passt keine Übung in den Plan.<br>Alle Kraftbereiche brauchen Pause oder das Zeitbudget ist zu klein.</div>`}
     </div>
@@ -715,8 +793,10 @@ function saveExForm(form){
   const data = {name, type:fd.get('type')||'strength', importance:Number(fd.get('importance'))||2, areas, timed, reps:(fd.get('reps')||'').trim(),
     duration:Math.min(30,Math.max(1,parseInt(fd.get('duration'))||1)), note:(fd.get('note')||'').trim(), link:(fd.get('link')||'').trim(), source:(fd.get('source')||'').trim()};
   const id=form.dataset.id;
-  if(id){ Object.assign(byId(id), data); toast('Gespeichert'); }
-  else { state.exercises.push({id:slug(name), active:true, deleted:false, ...data}); toast('Übung angelegt'); }
+  if(id){ const ex=byId(id);
+    if(presc(ex)!==presc(data)) data.lastChange=todayKey();
+    Object.assign(ex, data); toast('Gespeichert'); }
+  else { state.exercises.push({id:slug(name), active:true, deleted:false, lastChange:todayKey(), ...data}); toast('Übung angelegt'); }
   save(); closeSheet(); render();
 }
 
@@ -741,7 +821,7 @@ function renderMore(){
     <h2>Hinweise</h2>
     <div class="card prose">
       Der Timer-Ton ist nicht hörbar, wenn dein iPhone stummgeschaltet ist. Der Bildschirm bleibt während des Timers an.<br><br>
-      <b>Planungsregeln:</b> Jede Übung hat ein Wochenziel nach Wichtigkeit (Niedrig 1×, Mittel 3×, Hoch 5×). Was am weitesten hinter seinem Ziel liegt, kommt zuerst. Restzeit wird vor allem mit wichtigen Übungen aufgefüllt, nie mit niedrigen. Kräftigung eines Bereichs frühestens nach einem Ruhetag, Dehnen und Mobilisieren jederzeit.
+      <b>Steigerung:</b> Nach 3 Einheiten ohne „zwickt“ im zugehörigen Bereich schlägt Daily eine kleine Erhöhung vor. „Noch nicht“ oder eine eigene Änderung startet die Zählung neu.<br><br><b>Planungsregeln:</b> Jede Übung hat ein Wochenziel nach Wichtigkeit (Niedrig 1×, Mittel 3×, Hoch 5×). Was am weitesten hinter seinem Ziel liegt, kommt zuerst. Restzeit wird vor allem mit wichtigen Übungen aufgefüllt, nie mit niedrigen. Kräftigung eines Bereichs frühestens nach einem Ruhetag, Dehnen und Mobilisieren jederzeit.
     </div>
     <h2>&nbsp;</h2>
     <div class="list"><button class="danger" data-act="reset">${I.trash}<span>Alle Daten zurücksetzen</span></button></div>
@@ -846,6 +926,131 @@ function timerAdvance(){
 }
 function closeTimer(){ if(timer) clearInterval(timer.iv); timer=null; releaseWake(); const el=$('#timer'); el&&el.remove(); render(); }
 
+/* ---------- Geführter Modus ---------- */
+const REST_SECONDS = 45, NEXT_SECONDS = 10;
+let guide=null;
+function stepsFor(e){
+  const st=[];
+  if(e.timed){
+    const t=e.timed, rounds=[];
+    for(let s=1;s<=t.sets;s++){
+      if(t.perSide){ rounds.push(`Satz ${s} von ${t.sets} · links`); rounds.push(`Satz ${s} von ${t.sets} · rechts`); }
+      else rounds.push(`Satz ${s} von ${t.sets}`);
+    }
+    rounds.forEach((r,i)=>{
+      st.push({kind:'prep', secs:PREP_SECONDS, label:r, title: i===0?'Bereit machen':(t.perSide&&i%2===1?'Seite wechseln':'Nächster Satz')});
+      st.push({kind:'work', secs:t.seconds, label:r, title:'Halten'});
+    });
+  } else {
+    const p=parseReps(e.reps), sets=p?Math.max(1,p.sets):1;
+    const per=p?String(p.n):(e.reps||'Wie vorgegeben'), sub=p?(p.post.trim()?'Wdh. '+p.post.trim():'Wiederholungen'):'';
+    for(let s=1;s<=sets;s++){
+      st.push({kind:'set', label: sets>1?`Satz ${s} von ${sets}`:'', reps:per, sub});
+      if(s<sets) st.push({kind:'rest', secs:REST_SECONDS, label:`Pause vor Satz ${s+1}`, title:'Pause'});
+    }
+  }
+  return st;
+}
+const gEx = () => byId(guide.ids[guide.i]);
+const gStep = () => guide.steps[guide.si];
+function guideStart(){
+  const d=ensureToday();
+  const ids=planItems(d).filter(e=>!d.done[e.id]).map(e=>e.id);
+  if(!ids.length){ toast('Alles erledigt'); return; }
+  unlockAudio(); requestWake();
+  guide={ids, i:0, steps:[], si:0, phase:'run', startedAt:Date.now(), doneIds:[], paused:false};
+  const el=document.createElement('div'); el.id='guided'; el.setAttribute('role','dialog'); document.body.appendChild(el);
+  guide.iv=setInterval(gTick,100);
+  gStartExercise(0);
+}
+function gStartExercise(i){ guide.i=i; guide.phase='run'; guide.steps=stepsFor(gEx()); guide.si=0; gStartStep(); }
+function gStartTimer(secs){ guide.total=secs*1000; guide.endAt=Date.now()+guide.total; guide.paused=false; guide.lastSec=null; }
+function gStartStep(){ const st=gStep(); if(st.secs) gStartTimer(st.secs); gRender(); }
+function gNextStep(){
+  guide.si++;
+  if(guide.si>=guide.steps.length) return gFinishExercise();
+  if(gStep().kind==='work' || gStep().kind==='set') beep(990,.28);
+  gStartStep();
+}
+function gFinishExercise(){
+  const e=gEx(), d=ensureToday();
+  d.done[e.id]=Date.now(); save();
+  if(!guide.doneIds.includes(e.id)) guide.doneIds.push(e.id);
+  beep(880,.16,0); beep(1175,.16,.18); beep(1568,.3,.36);
+  gAfterExercise();
+}
+function gAfterExercise(){
+  if(guide.i+1<guide.ids.length){ guide.phase='next'; gStartTimer(NEXT_SECONDS); }
+  else { guide.phase='summary'; releaseWake(); }
+  gRender();
+}
+function gSkipExercise(){ gAfterExercise(); }
+function gTick(){
+  if(!guide) return;
+  const timed = (guide.phase==='run' && gStep() && gStep().secs) || guide.phase==='next';
+  if(!timed) return;
+  const rem = guide.paused ? guide.remain : Math.max(0, guide.endAt-Date.now());
+  const sec = Math.ceil(rem/1000);
+  if(!guide.paused){
+    if(sec!==guide.lastSec && sec>0 && sec<=3 && guide.phase==='run') beep(gStep().kind==='work'?520:660,.09);
+    guide.lastSec=sec;
+    if(rem<=0){
+      if(guide.phase==='next') return gStartExercise(guide.i+1);
+      return gNextStep();
+    }
+  }
+  const C=2*Math.PI*110, fg=$('#g-fg'), num=$('#g-num');
+  if(fg) fg.style.strokeDashoffset = C*(1-rem/guide.total);
+  if(num) num.textContent = sec;
+}
+function gRingHTML(soft, label){
+  const C=2*Math.PI*110;
+  return `<div class="ring ${soft?'soft':''}"><svg viewBox="0 0 240 240"><circle class="bg" cx="120" cy="120" r="110"/><circle class="fg" id="g-fg" cx="120" cy="120" r="110" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg>
+    <div class="num"><div><b id="g-num"></b><small>${esc(label)}</small></div></div></div>`;
+}
+function gRender(){
+  const el=$('#guided'); if(!el||!guide) return;
+  const n=guide.ids.length;
+  const top = `<div class="g-top"><button class="icon-btn" data-act="gClose" aria-label="Beenden">${I.close}</button>
+      <div class="g-count">${guide.phase==='summary'?'Fertig':`Übung ${guide.i+1} von ${n}`}</div><div style="width:36px"></div></div>
+    <div class="g-prog">${guide.ids.map((id,j)=>`<i class="${guide.doneIds.includes(id)?'done':(j===guide.i&&guide.phase!=='summary'?'cur':'')}"></i>`).join('')}</div>`;
+  let main='', foot='';
+  if(guide.phase==='run'){
+    const e=gEx(), st=gStep(), soft=e.type!=='strength';
+    const head = `<div class="g-name">${esc(e.name)}</div><div class="g-meta">${esc(presc(e))}</div><div class="g-round">${esc(st.label||'')}</div>`;
+    if(st.kind==='set'){
+      main = head + `<div class="big-reps">${esc(st.reps)}</div><div class="big-sub">${esc(st.sub)}</div>${e.note?`<div class="g-note">${esc(e.note)}</div>`:''}`;
+      foot = `<button class="btn primary" data-act="gSetDone">${I.check.replace('<svg','<svg style="stroke:#fff"')}${guide.si===guide.steps.length-1?'Übung geschafft':'Satz geschafft'}</button>
+        <button class="g-link" data-act="gSkipEx">Übung überspringen</button>`;
+    } else {
+      const ringSoft = st.kind!=='work' || soft;
+      main = head + gRingHTML(ringSoft, st.title) + (e.note&&st.kind==='prep'&&guide.si===0?`<div class="g-note">${esc(e.note)}</div>`:'');
+      foot = `<div class="btn-row"><button class="btn" data-act="gPause" id="g-pause">${guide.paused?'Weiter':'Pause'}</button><button class="btn" data-act="gStepNext">${st.kind==='rest'?'Pause beenden':'Weiter'}</button></div>
+        <button class="g-link" data-act="gSkipEx">Übung überspringen</button>`;
+    }
+  } else if(guide.phase==='next'){
+    const e=gEx(), nx=byId(guide.ids[guide.i+1]), did=guide.doneIds.includes(e.id);
+    main = `${did?`<div class="check-big">${I.check}</div><div class="g-name">${esc(e.name)}</div><div class="g-meta">geschafft</div>`:`<div class="g-name">${esc(e.name)}</div><div class="g-meta">übersprungen</div>`}
+      <div class="next-card"><div class="lbl">Als Nächstes · in <span id="g-num"></span> s</div>
+        <div class="ex-name" style="margin-top:4px">${esc(nx.name)}</div><div class="ex-meta">${esc(presc(nx))}${presc(nx)?' · ':''}~${nx.duration} Min</div>
+        <div class="tags">${typePill(nx)}${nx.areas.map(a=>`<span class="pill">${esc(a)}</span>`).join('')}</div></div>`;
+    foot = `<button class="btn primary" data-act="gGo">${I.play}Los</button><button class="g-link" data-act="gSkipNext">Diese auch überspringen</button>`;
+  } else {
+    const d=ensureToday(), doneEx=guide.doneIds.map(byId).filter(Boolean);
+    const mins=Math.max(1,Math.round((Date.now()-guide.startedAt)/60000));
+    const areas=AREAS.filter(a=>doneEx.some(e=>e.areas.includes(a)));
+    const progs=doneEx.map(progressionFor).filter(Boolean);
+    main = `<div class="check-big">${I.check}</div><div class="g-name">${doneEx.length?'Stark gemacht':'Für heute beendet'}</div>
+      <div class="sum-stats"><div class="stat"><b>${doneEx.length}</b><span>Übungen</span></div><div class="stat"><b>${mins}</b><span>Minuten</span></div><div class="stat"><b>${currentStreak()}</b><span>${currentStreak()===1?'Tag':'Tage'} Serie</span></div></div>
+      ${areas.length?`<div class="g-section"><h2>Wie fühlt es sich an?</h2><div class="card" style="padding:4px 16px">${areas.map(a=>`<div class="feel-row"><span class="area">${esc(a)}</span><div class="chips">${FEEL.map(([v,l])=>`<button class="chip ${v} ${d.feel[a]===v?'on':''}" data-act="feel" data-id="${esc(a)}" data-v="${v}">${l}</button>`).join('')}</div></div>`).join('')}</div></div>`:''}
+      ${progs.length?`<div class="g-section"><h2>Steigerung</h2><div class="stack">${progs.map(progCard).join('')}</div></div>`:''}`;
+    foot = `<button class="btn primary" data-act="gClose">Fertig</button>`;
+  }
+  el.innerHTML = top + `<div class="g-main">${main}</div><div class="g-foot">${foot}</div>`;
+  gTick();
+}
+function guideClose(){ if(guide) clearInterval(guide.iv); guide=null; releaseWake(); const el=$('#guided'); el&&el.remove(); render(); }
+
 /* ---------- Aktionen ---------- */
 const act = {
   tab(id){ ui.tab=id; ui.expanded=null; if(id==='history'){ ui.calMonth=todayKey().slice(0,7); ui.calSel=todayKey(); } render(); window.scrollTo(0,0); },
@@ -865,7 +1070,7 @@ const act = {
   },
   skip(id){ const d=ensureToday(); d.plan=d.plan.filter(x=>x!==id); if(!d.skipped.includes(id)) d.skipped.push(id); save(); render(); },
   unskip(id){ const d=ensureToday(); d.skipped=d.skipped.filter(x=>x!==id); if(!d.plan.includes(id)) d.plan.push(id); save(); render(); },
-  feel(area,t){ const d=ensureToday(), v=t.dataset.v; if(d.feel[area]===v) delete d.feel[area]; else d.feel[area]=v; save(); render(); },
+  feel(area,t){ const d=ensureToday(), v=t.dataset.v; if(d.feel[area]===v) delete d.feel[area]; else d.feel[area]=v; save(); render(); gRender(); },
   openAdd(){ openAddSheet(); },
   addPick(id){ const d=ensureToday(); if(!d.plan.includes(id)) d.plan.push(id); d.skipped=d.skipped.filter(x=>x!==id); save(); closeSheet(); render(); },
   dismissHint(){ state.settings.hideInstallHint=true; save(); render(); },
@@ -873,6 +1078,16 @@ const act = {
   timerPause(){ if(!timer||timer.phase==='done') return; if(timer.paused){ timer.paused=false; timer.endAt=Date.now()+timer.remain; } else { timer.remain=Math.max(0,timer.endAt-Date.now()); timer.paused=true; } timerTick(); },
   timerNext(){ if(!timer) return; if(timer.phase==='done') return closeTimer(); timer.paused=false; timer.endAt=Date.now(); timerAdvance(); },
   timerClose(){ closeTimer(); },
+  guideStart(){ guideStart(); },
+  gClose(){ guideClose(); },
+  gPause(){ if(!guide) return; if(guide.paused){ guide.paused=false; guide.endAt=Date.now()+guide.remain; } else { guide.remain=Math.max(0,guide.endAt-Date.now()); guide.paused=true; } const b=$('#g-pause'); if(b) b.textContent=guide.paused?'Weiter':'Pause'; gTick(); },
+  gStepNext(){ if(guide) gNextStep(); },
+  gSetDone(){ if(guide) gNextStep(); },
+  gSkipEx(){ if(guide) gSkipExercise(); },
+  gGo(){ if(guide) gStartExercise(guide.i+1); },
+  gSkipNext(){ if(!guide) return; guide.i++; gAfterExercise(); },
+  progAccept(id){ const pr=progressionFor(byId(id)); if(!pr) return; pr.apply(); byId(id).lastChange=todayKey(); save(); render(); gRender(); toast('Neu: '+pr.to); },
+  progLater(id){ byId(id).lastChange=todayKey(); save(); render(); gRender(); toast('Kommt in ein paar Einheiten wieder'); },
   calPrev(){ const [y,m]=ui.calMonth.split('-').map(Number); const d=new Date(y,m-2,1); ui.calMonth=d.getFullYear()+'-'+pad(d.getMonth()+1); render(); },
   calNext(){ const [y,m]=ui.calMonth.split('-').map(Number); const d=new Date(y,m,1); ui.calMonth=d.getFullYear()+'-'+pad(d.getMonth()+1); render(); },
   calDay(k){ ui.calSel=k; render(); },
@@ -922,7 +1137,7 @@ $('#import-file').addEventListener('change', async ev=>{
   }catch(e){ toast('Datei ist kein gültiges Daily-Backup'); }
 });
 // Tageswechsel: beim Zurückkehren in die App neu rendern
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && ui.renderedDay!==todayKey() && !timer) render(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && ui.renderedDay!==todayKey() && !timer && !guide) render(); });
 
 render();
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){

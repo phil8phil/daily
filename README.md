@@ -26,6 +26,14 @@ Geänderte Dateien im Repo erneut hochladen (gleiche Namen überschreiben). Bei 
 
 Unter **Mehr → Backup exportieren** speicherst du eine JSON-Datei, z. B. in iCloud Drive. Mit **Backup importieren** holst du sie auf einem neuen Gerät zurück.
 
+## Geführter Modus
+
+Auf **Heute** startet „Geführt starten“ den Abend: eine Übung pro Bildschirm, Timer für Halteübungen, Satzzähler mit 45 s Pause für Wiederholungsübungen, automatischer Übergang zur nächsten Übung und am Ende eine Zusammenfassung.
+
+## Steigerung
+
+Nach 3 Einheiten ohne „zwickt“ im zugehörigen Bereich schlägt Daily eine kleine Erhöhung vor (+5 s bzw. +10 s bei Halteübungen, +1 bzw. +2 Wiederholungen). „Noch nicht“ oder eine eigene Änderung startet die Zählung neu.
+
 ## Planungsregeln
 
 - Du wählst abends 15, 20 oder 30 Minuten, der Plan wird passend zusammengestellt.
