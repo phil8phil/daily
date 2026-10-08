@@ -28,7 +28,7 @@ Unter **Mehr → Backup exportieren** speicherst du eine JSON-Datei, z. B. in iC
 
 ## Geführter Modus
 
-Auf **Heute** startet „Geführt starten“ den Abend: eine Übung pro Bildschirm, Timer für Halteübungen, Satzzähler mit 45 s Pause für Wiederholungsübungen, automatischer Übergang zur nächsten Übung und am Ende eine Zusammenfassung.
+Auf **Heute** startet „Geführt starten“ den Abend: eine Übung pro Bildschirm, Timer für Halteübungen, Satzzähler mit einstellbarer Pause (Mehr → Pause zwischen Sätzen, Standard 45 s) für Wiederholungsübungen, automatischer Übergang zur nächsten Übung und am Ende eine Zusammenfassung.
 
 ## Steigerung
 

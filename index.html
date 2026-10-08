@@ -290,7 +290,7 @@ textarea.input{min-height:72px;resize:vertical}
 <script>
 'use strict';
 /* ---------- Konstanten ---------- */
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.3.1';
 const STORE_KEY = 'daily.v1';
 const AREAS = ['Arme','Schulter','Brust','Brustwirbelsäule','Beine/Hüfte','Rumpf'];
 const TYPES = {
@@ -324,7 +324,7 @@ const SEED = [
 
 /* ---------- Speicher ---------- */
 const SEED_REV = 2; // erhöhen, wenn neue Startübungen dazukommen
-function fresh(){ return {version:1, exercises:SEED.map(e=>JSON.parse(JSON.stringify(e))), days:{}, settings:{defaultBudget:20, hideInstallHint:false, seedRev:SEED_REV}}; }
+function fresh(){ return {version:1, exercises:SEED.map(e=>JSON.parse(JSON.stringify(e))), days:{}, settings:{defaultBudget:20, hideInstallHint:false, seedRev:SEED_REV, restSeconds:45}}; }
 // Neue Startübungen einmalig in bestehende Daten übernehmen
 function addNewSeeds(s, fromRev){
   SEED.filter(e=>(e.seedRev||1)>fromRev).forEach(e=>{
@@ -808,6 +808,9 @@ function renderMore(){
     <h2>Standard-Zeitbudget</h2>
     <div class="seg">${BUDGETS.map(b=>`<button class="${state.settings.defaultBudget===b?'on':''}" data-act="setDefault" data-id="${b}">${b} Min</button>`).join('')}</div>
     <p class="muted small" style="margin:8px 4px 0">Damit startet jeder neue Tag. Du kannst es abends jederzeit ändern.</p>
+    <h2>Pause zwischen Sätzen</h2>
+    <div class="seg">${REST_OPTIONS.map(v=>`<button class="${restSeconds()===v?'on':''}" data-act="setRest" data-id="${v}">${v} s</button>`).join('')}</div>
+    <p class="muted small" style="margin:8px 4px 0">Gilt im geführten Modus für Übungen mit Wiederholungen. Während der Pause kannst du mit ±15 s spontan anpassen.</p>
     <h2>Datensicherung</h2>
     <div class="list">
       <button data-act="export">${I.up}<span>Backup exportieren</span></button>
@@ -927,7 +930,8 @@ function timerAdvance(){
 function closeTimer(){ if(timer) clearInterval(timer.iv); timer=null; releaseWake(); const el=$('#timer'); el&&el.remove(); render(); }
 
 /* ---------- Geführter Modus ---------- */
-const REST_SECONDS = 45, NEXT_SECONDS = 10;
+const REST_OPTIONS = [30,45,60,90], NEXT_SECONDS = 10;
+const restSeconds = () => state.settings.restSeconds || 45;
 let guide=null;
 function stepsFor(e){
   const st=[];
@@ -946,13 +950,14 @@ function stepsFor(e){
     const per=p?String(p.n):(e.reps||'Wie vorgegeben'), sub=p?(p.post.trim()?'Wdh. '+p.post.trim():'Wiederholungen'):'';
     for(let s=1;s<=sets;s++){
       st.push({kind:'set', label: sets>1?`Satz ${s} von ${sets}`:'', reps:per, sub});
-      if(s<sets) st.push({kind:'rest', secs:REST_SECONDS, label:`Pause vor Satz ${s+1}`, title:'Pause'});
+      if(s<sets) st.push({kind:'rest', secs:restSeconds(), label:`Pause vor Satz ${s+1}`, title:'Pause'});
     }
   }
   return st;
 }
 const gEx = () => byId(guide.ids[guide.i]);
 const gStep = () => guide.steps[guide.si];
+const gPauseLabel = () => gStep()&&gStep().kind==='rest' ? (guide.paused?'Fortsetzen':'Anhalten') : (guide.paused?'Weiter':'Pause');
 function guideStart(){
   const d=ensureToday();
   const ids=planItems(d).filter(e=>!d.done[e.id]).map(e=>e.id);
@@ -1025,7 +1030,7 @@ function gRender(){
     } else {
       const ringSoft = st.kind!=='work' || soft;
       main = head + gRingHTML(ringSoft, st.title) + (e.note&&st.kind==='prep'&&guide.si===0?`<div class="g-note">${esc(e.note)}</div>`:'');
-      foot = `<div class="btn-row"><button class="btn" data-act="gPause" id="g-pause">${guide.paused?'Weiter':'Pause'}</button><button class="btn" data-act="gStepNext">${st.kind==='rest'?'Pause beenden':'Weiter'}</button></div>
+      foot = `${st.kind==='rest'?`<div class="btn-row"><button class="btn ghost" data-act="gRestAdj" data-id="-15">−15 s</button><button class="btn ghost" data-act="gRestAdj" data-id="15">+15 s</button></div>`:''}<div class="btn-row"><button class="btn" data-act="gPause" id="g-pause">${gPauseLabel()}</button><button class="btn" data-act="gStepNext">${st.kind==='rest'?'Pause beenden':'Weiter'}</button></div>
         <button class="g-link" data-act="gSkipEx">Übung überspringen</button>`;
     }
   } else if(guide.phase==='next'){
@@ -1080,8 +1085,12 @@ const act = {
   timerClose(){ closeTimer(); },
   guideStart(){ guideStart(); },
   gClose(){ guideClose(); },
-  gPause(){ if(!guide) return; if(guide.paused){ guide.paused=false; guide.endAt=Date.now()+guide.remain; } else { guide.remain=Math.max(0,guide.endAt-Date.now()); guide.paused=true; } const b=$('#g-pause'); if(b) b.textContent=guide.paused?'Weiter':'Pause'; gTick(); },
+  gPause(){ if(!guide) return; if(guide.paused){ guide.paused=false; guide.endAt=Date.now()+guide.remain; } else { guide.remain=Math.max(0,guide.endAt-Date.now()); guide.paused=true; } const b=$('#g-pause'); if(b) b.textContent=gPauseLabel(); gTick(); },
   gStepNext(){ if(guide) gNextStep(); },
+  gRestAdj(v){ if(!guide||gStep().kind!=='rest') return; const ms=Number(v)*1000;
+    if(guide.paused) guide.remain=Math.max(1000,guide.remain+ms); else guide.endAt=Math.max(Date.now()+1000,guide.endAt+ms);
+    guide.total=Math.max(1000,guide.total+ms); guide.lastSec=null; gTick(); },
+  setRest(v){ state.settings.restSeconds=Number(v); save(); render(); },
   gSetDone(){ if(guide) gNextStep(); },
   gSkipEx(){ if(guide) gSkipExercise(); },
   gGo(){ if(guide) gStartExercise(guide.i+1); },
