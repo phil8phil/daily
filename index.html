@@ -250,7 +250,7 @@ textarea.input{min-height:72px;resize:vertical}
 <script>
 'use strict';
 /* ---------- Konstanten ---------- */
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 const STORE_KEY = 'daily.v1';
 const AREAS = ['Arme','Schulter','Brust','Brustwirbelsäule','Beine/Hüfte','Rumpf'];
 const TYPES = {
@@ -277,18 +277,30 @@ const SEED = [
   {id:'liegestuetze', name:'Liegestütze', type:'strength', areas:['Brust','Arme','Schulter'], timed:null, reps:'3 × 10', duration:4},
   {id:'air-squats', name:'Air Squats', type:'strength', areas:['Beine/Hüfte'], timed:null, reps:'3 × 20', duration:4},
   {id:'bulgarian-split-squats', name:'Bulgarian Split Squats', type:'strength', areas:['Beine/Hüfte'], timed:null, reps:'3 × 8 pro Seite', duration:6},
-  {id:'bws-mobilisieren', name:'Brustwirbelsäule mobilisieren', type:'mobility', areas:['Brustwirbelsäule'], timed:{sets:2,seconds:60,perSide:false}, reps:'', duration:2}
+  {id:'bws-mobilisieren', name:'Brustwirbelsäule mobilisieren', type:'mobility', areas:['Brustwirbelsäule'], timed:{sets:2,seconds:60,perSide:false}, reps:'', duration:2},
+  {id:'hollow-hold', name:'Hollow Hold', type:'strength', areas:['Rumpf'], timed:{sets:3,seconds:30,perSide:false}, reps:'', duration:3, seedRev:2,
+   note:'Rückenlage, unterer Rücken bleibt fest am Boden. Arme und Beine gestreckt leicht anheben, Körper bildet eine flache „Banane“. Hebt sich der Rücken ab: Beine höher halten oder Knie anwinkeln.'}
 ].map(e=>({note:'', link:'', source:'', active:true, deleted:false, importance:2, ...e}));
 
 /* ---------- Speicher ---------- */
-function fresh(){ return {version:1, exercises:SEED.map(e=>JSON.parse(JSON.stringify(e))), days:{}, settings:{defaultBudget:20, hideInstallHint:false}}; }
+const SEED_REV = 2; // erhöhen, wenn neue Startübungen dazukommen
+function fresh(){ return {version:1, exercises:SEED.map(e=>JSON.parse(JSON.stringify(e))), days:{}, settings:{defaultBudget:20, hideInstallHint:false, seedRev:SEED_REV}}; }
+// Neue Startübungen einmalig in bestehende Daten übernehmen
+function addNewSeeds(s, fromRev){
+  SEED.filter(e=>(e.seedRev||1)>fromRev).forEach(e=>{
+    const exists = s.exercises.some(x=>x.id===e.id || x.name.trim().toLowerCase()===e.name.toLowerCase());
+    if(!exists) s.exercises.push(JSON.parse(JSON.stringify(e)));
+  });
+}
 function normalize(s){
   const f = fresh();
   if(!s || typeof s!=='object') return f;
   s.version = 1;
   if(!Array.isArray(s.exercises)) s.exercises = f.exercises;
   if(!s.days || typeof s.days!=='object') s.days = {};
+  const prevRev = (s.settings && s.settings.seedRev) || 1;
   s.settings = Object.assign({}, f.settings, s.settings||{});
+  if(prevRev < SEED_REV){ addNewSeeds(s, prevRev); s.settings.seedRev = SEED_REV; }
   s.exercises.forEach(e=>{
     e.areas = Array.isArray(e.areas)&&e.areas.length ? e.areas : ['Rumpf'];
     e.duration = Math.max(1, Number(e.duration)||1);
@@ -394,7 +406,7 @@ function scoreFor(e, dateKey, H, plan, rng){
 // Kraftübung zusammenhängen. So bleibt für morgen der andere Teil übrig (z. B. Beine ↔ Oberkörper).
 function strengthFocus(plan){
   const f=new Set();
-  plan.forEach(id=>{ const p=byId(id); if(p && p.type==='strength') p.areas.forEach(a=>f.add(a)); });
+  plan.forEach(id=>{ const p=byId(id); if(p && p.type==='strength') p.areas.forEach(a=>{ if(a!=='Rumpf') f.add(a); }); });
   return f;
 }
 // mode 'target': nur Übungen unter ihrem Wochenziel.
@@ -406,7 +418,8 @@ function bestCandidate(dateKey, H, plan, remaining, exclude, rng, mode='any'){
     if(plan.includes(e.id) || exclude.has(e.id)) continue;
     if(e.duration>remaining) continue;
     if(!eligible(e,dateKey,H)) continue;
-    if(e.type==='strength' && focus.size && !e.areas.some(a=>focus.has(a))) continue;
+    // Reine Rumpfübungen passen zu jedem Schwerpunkt
+    if(e.type==='strength' && focus.size && !e.areas.every(a=>a==='Rumpf') && !e.areas.some(a=>focus.has(a))) continue;
     const reached = (H.week[e.id]||0) >= targetOf(e);
     if(mode==='target' && reached) continue;
     // Auffüllen: Hoch unbegrenzt, Mittel höchstens 1× über Ziel, Niedrig nie
