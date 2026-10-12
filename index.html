@@ -290,7 +290,7 @@ textarea.input{min-height:72px;resize:vertical}
 <script>
 'use strict';
 /* ---------- Konstanten ---------- */
-const APP_VERSION = '1.3.1';
+const APP_VERSION = '1.3.2';
 const STORE_KEY = 'daily.v1';
 const AREAS = ['Arme','Schulter','Brust','Brustwirbelsäule','Beine/Hüfte','Rumpf'];
 const TYPES = {
@@ -307,7 +307,7 @@ const IMPORTANCE = {
 };
 const targetOf = e => IMPORTANCE[e.importance||2].target;
 const FEEL = [['good','gut'],['ok','okay'],['pain','zwickt']];
-const PREP_SECONDS = 5;
+const PREP_SECONDS = 10;
 
 const SEED = [
   {id:'trizeps-dehnen', name:'Trizeps dehnen', type:'stretch', areas:['Arme'], timed:{sets:2,seconds:30,perSide:true}, reps:'', duration:2},
