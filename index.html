@@ -290,7 +290,7 @@ textarea.input{min-height:72px;resize:vertical}
 <script>
 'use strict';
 /* ---------- Konstanten ---------- */
-const APP_VERSION = '1.3.3';
+const APP_VERSION = '1.3.4';
 const STORE_KEY = 'daily.v1';
 const AREAS = ['Arme','Schulter','Brust','Brustwirbelsäule','Beine/Hüfte','Rumpf'];
 const TYPES = {
@@ -319,11 +319,13 @@ const SEED = [
   {id:'bulgarian-split-squats', name:'Bulgarian Split Squats', type:'strength', areas:['Beine/Hüfte'], timed:null, reps:'3 × 8 pro Seite', duration:6},
   {id:'bws-mobilisieren', name:'Brustwirbelsäule mobilisieren', type:'mobility', areas:['Brustwirbelsäule'], timed:{sets:2,seconds:60,perSide:false}, reps:'', duration:2},
   {id:'hollow-hold', name:'Hollow Hold', type:'strength', areas:['Rumpf'], timed:{sets:3,seconds:30,perSide:false}, reps:'', duration:3, seedRev:2,
-   note:'Rückenlage, unterer Rücken bleibt fest am Boden. Arme und Beine gestreckt leicht anheben, Körper bildet eine flache „Banane“. Hebt sich der Rücken ab: Beine höher halten oder Knie anwinkeln.'}
+   note:'Rückenlage, unterer Rücken bleibt fest am Boden. Arme und Beine gestreckt leicht anheben, Körper bildet eine flache „Banane“. Hebt sich der Rücken ab: Beine höher halten oder Knie anwinkeln.'},
+  {id:'plank', name:'Plank', type:'strength', areas:['Rumpf'], timed:{sets:3,seconds:45,perSide:false}, reps:'', duration:3, seedRev:3,
+   note:'Unterarmstütz, Ellbogen unter den Schultern. Körper bildet eine gerade Linie von Kopf bis Ferse: Bauch und Po fest anspannen, Hüfte weder durchhängen lassen noch nach oben schieben. Ruhig weiteratmen.'}
 ].map(e=>({note:'', link:'', source:'', active:true, deleted:false, importance:2, ...e}));
 
 /* ---------- Speicher ---------- */
-const SEED_REV = 2; // erhöhen, wenn neue Startübungen dazukommen
+const SEED_REV = 3; // erhöhen, wenn neue Startübungen dazukommen
 function fresh(){ return {version:1, exercises:SEED.map(e=>JSON.parse(JSON.stringify(e))), days:{}, settings:{defaultBudget:20, hideInstallHint:false, seedRev:SEED_REV, restSeconds:45}}; }
 // Neue Startübungen einmalig in bestehende Daten übernehmen
 function addNewSeeds(s, fromRev){
