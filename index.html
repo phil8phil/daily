@@ -290,7 +290,7 @@ textarea.input{min-height:72px;resize:vertical}
 <script>
 'use strict';
 /* ---------- Konstanten ---------- */
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.4.1';
 const STORE_KEY = 'daily.v1';
 const AREAS = ['Arme','Schulter','Brust','Brustwirbelsäule','Beine/Hüfte','Rumpf'];
 const TYPES = {
@@ -311,9 +311,9 @@ const PREP_SECONDS = 10;
 
 const SEED = [
   {id:'trizeps-dehnen', name:'Trizeps dehnen', type:'stretch', areas:['Arme'], timed:{sets:2,seconds:30,perSide:true}, reps:'', duration:2},
-  {id:'trizeps-kraeftigen', name:'Trizeps kräftigen', type:'strength', areas:['Arme'], timed:null, reps:'3 × 12', duration:4},
+  {id:'trizeps-kraeftigen', name:'Trizeps kräftigen', type:'strength', areas:['Arme'], timed:null, reps:'3 × 12 pro Seite', duration:6},
   {id:'schulter-innenrotation', name:'Schulter-Innenrotation in Rückenlage', type:'mobility', areas:['Schulter'], timed:{sets:2,seconds:45,perSide:true}, reps:'', duration:3},
-  {id:'unterarm-kraeftigen', name:'Unterarm kräftigen', type:'strength', areas:['Arme'], timed:null, reps:'3 × 15', duration:3},
+  {id:'unterarm-kraeftigen', name:'Unterarm kräftigen', type:'strength', areas:['Arme'], timed:null, reps:'3 × 15 pro Seite', duration:5},
   {id:'liegestuetze', name:'Liegestütze', type:'strength', areas:['Brust','Arme','Schulter'], timed:null, reps:'3 × 10', duration:4},
   {id:'air-squats', name:'Air Squats', type:'strength', areas:['Beine/Hüfte'], timed:null, reps:'3 × 20', duration:4},
   {id:'bulgarian-split-squats', name:'Bulgarian Split Squats', type:'strength', areas:['Beine/Hüfte'], timed:null, reps:'3 × 8 pro Seite', duration:6},
@@ -331,8 +331,19 @@ const SEED = [
 ].map(e=>({note:'', link:'', source:'', active:true, deleted:false, importance:2, ...e}));
 
 /* ---------- Speicher ---------- */
-const SEED_REV = 4; // erhöhen, wenn neue Startübungen dazukommen
-function fresh(){ return {version:1, exercises:SEED.map(e=>JSON.parse(JSON.stringify(e))), days:{}, settings:{defaultBudget:20, hideInstallHint:false, seedRev:SEED_REV, restSeconds:45}}; }
+const SEED_REV = 4;
+const FIX_REV = 1; // einmalige Korrekturen an bestehenden Übungen
+function applyFixes(s, fromRev){
+  if(fromRev < 1){
+    // Trizeps und Unterarm kräftigen werden pro Seite ausgeführt
+    [['trizeps-kraeftigen',4,6],['unterarm-kraeftigen',3,5]].forEach(([id,oldDur,newDur])=>{
+      const e=s.exercises.find(x=>x.id===id); if(!e || e.timed) return;
+      if(e.reps && !/pro seite/i.test(e.reps)) e.reps=e.reps.trim()+' pro Seite';
+      if(Number(e.duration)===oldDur) e.duration=newDur;
+    });
+  }
+} // erhöhen, wenn neue Startübungen dazukommen
+function fresh(){ return {version:1, exercises:SEED.map(e=>JSON.parse(JSON.stringify(e))), days:{}, settings:{defaultBudget:20, hideInstallHint:false, seedRev:SEED_REV, fixRev:FIX_REV, restSeconds:45}}; }
 // Neue Startübungen einmalig in bestehende Daten übernehmen
 function addNewSeeds(s, fromRev){
   SEED.filter(e=>(e.seedRev||1)>fromRev).forEach(e=>{
@@ -347,8 +358,10 @@ function normalize(s){
   if(!Array.isArray(s.exercises)) s.exercises = f.exercises;
   if(!s.days || typeof s.days!=='object') s.days = {};
   const prevRev = (s.settings && s.settings.seedRev) || 1;
+  const prevFix = (s.settings && s.settings.fixRev) || 0;
   s.settings = Object.assign({}, f.settings, s.settings||{});
   if(prevRev < SEED_REV){ addNewSeeds(s, prevRev); s.settings.seedRev = SEED_REV; }
+  if(prevFix < FIX_REV){ applyFixes(s, prevFix); s.settings.fixRev = FIX_REV; }
   const _n=new Date(), nowKey=_n.getFullYear()+'-'+String(_n.getMonth()+1).padStart(2,'0')+'-'+String(_n.getDate()).padStart(2,'0');
   s.exercises.forEach(e=>{
     e.areas = Array.isArray(e.areas)&&e.areas.length ? e.areas : ['Rumpf'];
