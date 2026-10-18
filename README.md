@@ -36,7 +36,7 @@ Nach 3 Einheiten ohne „zwickt“ im zugehörigen Bereich schlägt Daily eine k
 
 ## Planungsregeln
 
-- Du wählst abends 15, 20 oder 30 Minuten, der Plan wird passend zusammengestellt.
+- Du wählst abends 10, 15, 20 oder 30 Minuten, der Plan wird passend zusammengestellt.
 - Kräftigung eines Körperbereichs frühestens nach einem Ruhetag.
 - Pro Tag ein Kraft-Schwerpunkt (z. B. Beine oder Oberkörper), damit der andere Teil am nächsten Tag dran ist.
 - Jede Übung hat eine Wichtigkeit mit Wochenziel: Niedrig 1×, Mittel 3×, Hoch 5×. Was am weitesten hinter seinem Ziel liegt, kommt zuerst.
