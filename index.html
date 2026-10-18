@@ -290,7 +290,7 @@ textarea.input{min-height:72px;resize:vertical}
 <script>
 'use strict';
 /* ---------- Konstanten ---------- */
-const APP_VERSION = '1.3.4';
+const APP_VERSION = '1.4.0';
 const STORE_KEY = 'daily.v1';
 const AREAS = ['Arme','Schulter','Brust','Brustwirbelsäule','Beine/Hüfte','Rumpf'];
 const TYPES = {
@@ -321,11 +321,17 @@ const SEED = [
   {id:'hollow-hold', name:'Hollow Hold', type:'strength', areas:['Rumpf'], timed:{sets:3,seconds:30,perSide:false}, reps:'', duration:3, seedRev:2,
    note:'Rückenlage, unterer Rücken bleibt fest am Boden. Arme und Beine gestreckt leicht anheben, Körper bildet eine flache „Banane“. Hebt sich der Rücken ab: Beine höher halten oder Knie anwinkeln.'},
   {id:'plank', name:'Plank', type:'strength', areas:['Rumpf'], timed:{sets:3,seconds:45,perSide:false}, reps:'', duration:3, seedRev:3,
-   note:'Unterarmstütz, Ellbogen unter den Schultern. Körper bildet eine gerade Linie von Kopf bis Ferse: Bauch und Po fest anspannen, Hüfte weder durchhängen lassen noch nach oben schieben. Ruhig weiteratmen.'}
+   note:'Unterarmstütz, Ellbogen unter den Schultern. Körper bildet eine gerade Linie von Kopf bis Ferse: Bauch und Po fest anspannen, Hüfte weder durchhängen lassen noch nach oben schieben. Ruhig weiteratmen.'},
+  {id:'open-book', name:'Brustwirbelsäulen-Rotation (Open Book)', type:'mobility', areas:['Brustwirbelsäule','Schulter'], timed:null, reps:'1 × 8 pro Seite', duration:2, seedRev:4,
+   note:'Seitenlage, Knie angewinkelt. Oberen Arm langsam bis zur anderen Seite öffnen, der Blick folgt der Hand. 8–10 pro Seite, langsam.\nHilft bei Overhead Squats, Snatches und Handstand und beugt Schulterproblemen vor.'},
+  {id:'glute-bridge', name:'Glute Bridge (einbeinig)', type:'strength', areas:['Beine/Hüfte'], timed:null, reps:'2 × 12 pro Seite', duration:4, seedRev:4,
+   note:'Hüfte über die Fersen hochdrücken, oben 2 Sek. halten und die Spannung im Po bewusst spüren. 2 × 12–15 pro Seite.\nWeckt die Gesäßmuskeln auf und entlastet den unteren Rücken.'},
+  {id:'dead-bug', name:'Dead Bug', type:'strength', areas:['Rumpf'], timed:null, reps:'2 × 8 pro Seite', duration:3, seedRev:4,
+   note:'Rückenlage, unterer Rücken fest am Boden. Gegengleich Arm und Bein langsam ausstrecken, sehr kontrolliert. 2 × 8–10 pro Seite.\nTrainiert die Rumpfstabilität für Heben und Kipping-Bewegungen.'}
 ].map(e=>({note:'', link:'', source:'', active:true, deleted:false, importance:2, ...e}));
 
 /* ---------- Speicher ---------- */
-const SEED_REV = 3; // erhöhen, wenn neue Startübungen dazukommen
+const SEED_REV = 4; // erhöhen, wenn neue Startübungen dazukommen
 function fresh(){ return {version:1, exercises:SEED.map(e=>JSON.parse(JSON.stringify(e))), days:{}, settings:{defaultBudget:20, hideInstallHint:false, seedRev:SEED_REV, restSeconds:45}}; }
 // Neue Startübungen einmalig in bestehende Daten übernehmen
 function addNewSeeds(s, fromRev){
