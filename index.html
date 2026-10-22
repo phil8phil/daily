@@ -290,7 +290,7 @@ textarea.input{min-height:72px;resize:vertical}
 <script>
 'use strict';
 /* ---------- Konstanten ---------- */
-const APP_VERSION = '1.4.1';
+const APP_VERSION = '1.4.2';
 const STORE_KEY = 'daily.v1';
 const AREAS = ['Arme','Schulter','Brust','Brustwirbelsäule','Beine/Hüfte','Rumpf'];
 const TYPES = {
@@ -327,11 +327,13 @@ const SEED = [
   {id:'glute-bridge', name:'Glute Bridge (einbeinig)', type:'strength', areas:['Beine/Hüfte'], timed:null, reps:'2 × 12 pro Seite', duration:4, seedRev:4,
    note:'Hüfte über die Fersen hochdrücken, oben 2 Sek. halten und die Spannung im Po bewusst spüren. 2 × 12–15 pro Seite.\nWeckt die Gesäßmuskeln auf und entlastet den unteren Rücken.'},
   {id:'dead-bug', name:'Dead Bug', type:'strength', areas:['Rumpf'], timed:null, reps:'2 × 8 pro Seite', duration:3, seedRev:4,
-   note:'Rückenlage, unterer Rücken fest am Boden. Gegengleich Arm und Bein langsam ausstrecken, sehr kontrolliert. 2 × 8–10 pro Seite.\nTrainiert die Rumpfstabilität für Heben und Kipping-Bewegungen.'}
+   note:'Rückenlage, unterer Rücken fest am Boden. Gegengleich Arm und Bein langsam ausstrecken, sehr kontrolliert. 2 × 8–10 pro Seite.\nTrainiert die Rumpfstabilität für Heben und Kipping-Bewegungen.'},
+  {id:'copenhagen-plank', name:'Copenhagen Plank', type:'strength', areas:['Beine/Hüfte'], timed:{sets:2,seconds:20,perSide:true}, reps:'', duration:3, seedRev:5,
+   note:'Seitstütz auf dem Unterarm, oberes Bein liegt mit der Innenseite auf einer Bank, das untere Bein hängt frei oder wird angehoben. Hüfte hochhalten, Körper bildet eine gerade Linie.\nTrainiert vor allem die Adduktoren (Oberschenkelinnenseite) und die seitliche Rumpfmuskulatur.\nEinfacher: Knie statt Fuß auf der Bank ablegen.'}
 ].map(e=>({note:'', link:'', source:'', active:true, deleted:false, importance:2, ...e}));
 
 /* ---------- Speicher ---------- */
-const SEED_REV = 4;
+const SEED_REV = 5;
 const FIX_REV = 1; // einmalige Korrekturen an bestehenden Übungen
 function applyFixes(s, fromRev){
   if(fromRev < 1){
